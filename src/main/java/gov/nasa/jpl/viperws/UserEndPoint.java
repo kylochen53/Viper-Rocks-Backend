@@ -17,29 +17,29 @@ public class UserEndPoint{
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getUserByEmail(@PathParam("email") String email) throws SQLException {
-        String query = "SELECT 1 FROM users WHERE email = ?";
+        String query = "SELECT email, username, password FROM users WHERE email = ?";
         try (Connection conn = PostgresConnection.getConnection()) {
             PreparedStatement stmt = conn.prepareStatement(query);
             stmt.setString(1, email);
             ResultSet rs = stmt.executeQuery();
 
-            boolean exists = rs.next();
+            JsonObjectBuilder userBuilder = Json.createObjectBuilder();
 
-            // Return a JSON object with a boolean field
-            JsonObject result = Json.createObjectBuilder()
-                    .add("exists", exists)
-                    .build();
+            if (rs.next()) {
+                // User found
+                userBuilder.add("exists", true)
+                        .add("email", rs.getString("email"))
+                        .add("username", rs.getString("username"))
+                        .add("password", rs.getString("password")); // ideally hash this!
+            } else {
+                // User not found
+                userBuilder.add("exists", false);
+            }
 
-            return Response.ok(result.toString(), MediaType.APPLICATION_JSON).build();
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return Response.serverError()
-                    .entity(Json.createObjectBuilder()
-                            .add("error", "Database error")
-                            .add("details", e.getMessage())
-                            .build()
-                            .toString())
+            return Response
+                    .status(Response.Status.CREATED)  // 201, matching original
+                    .entity(userBuilder.build().toString())
                     .type(MediaType.APPLICATION_JSON)
                     .build();
         }
