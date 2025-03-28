@@ -17,7 +17,7 @@ public class UserEndPoint{
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getUserByEmail(@PathParam("email") String email) throws SQLException {
-        String query = "SELECT email, username, password FROM users WHERE email = ?";
+        String query = "SELECT email, username, password, id, role FROM users WHERE email = ?";
         try (Connection conn = PostgresConnection.getConnection()) {
             PreparedStatement stmt = conn.prepareStatement(query);
             stmt.setString(1, email);
@@ -30,7 +30,9 @@ public class UserEndPoint{
                 userBuilder.add("exists", true)
                         .add("email", rs.getString("email"))
                         .add("username", rs.getString("username"))
-                        .add("password", rs.getString("password")); // ideally hash this!
+                        .add("password", rs.getString("password"))
+                        .add("id", rs.getInt("id"))
+                        .add("role", rs.getString("role")); // ideally hash this!
             } else {
                 // User not found
                 userBuilder.add("exists", false);
